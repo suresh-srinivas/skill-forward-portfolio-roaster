@@ -1,7 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
 export interface RoastResponse {
   gordonRamsay: string;
   seniorLead: string;
@@ -9,6 +7,9 @@ export interface RoastResponse {
 }
 
 export async function generateRoast(url: string): Promise<RoastResponse> {
+  const apiKey = (process.env as any).API_KEY || process.env.GEMINI_API_KEY;
+  const ai = new GoogleGenAI({ apiKey });
+
   let siteContent = '';
   try {
     const res = await fetch(`https://r.jina.ai/${url}`, {

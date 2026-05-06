@@ -1,14 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Key } from 'lucide-react';
 import { generateRoast, type RoastResponse } from './lib/gemini';
 import { PersonaCard } from './components/PersonaCard';
+
+declare global {
+  interface Window {
+    aistudio?: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}
 
 export default function App() {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<RoastResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    async function checkApiKey() {
+      if (window.aistudio) {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        setHasApiKey(hasKey);
+      } else {
+        setHasApiKey(true); // Default to true if not running in the platform, using environment var
+      }
+    }
+    checkApiKey();
+  }, []);
+
+  const handleSetupKey = async () => {
+    if (window.aistudio) {
+      try {
+        await window.aistudio.openSelectKey();
+        setHasApiKey(true); // Assume success to mitigate race condition
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +61,13 @@ export default function App() {
       setResult(roast);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Failed to analyze portfolio. Please try again.');
+      const errorMessage = err.message || 'Failed to analyze portfolio. Please try again.';
+      setError(errorMessage);
+      
+      // If the error relates to a missing entity or unauthorized, prompt for key
+      if (errorMessage.toLowerCase().includes('requested entity was not found') || errorMessage.toLowerCase().includes('api key not valid')) {
+        setHasApiKey(false);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -55,12 +94,24 @@ export default function App() {
               The Critic
             </motion.h1>
           </div>
-          <div className="text-left sm:text-right w-full sm:w-auto mt-4 sm:mt-0">
-            <p className="text-sm font-mono text-[#1A1A1A]">TARGET URL:</p>
-            {result ? (
-              <p className="text-lg sm:text-xl font-serif italic text-blue-600 truncate max-w-[250px] sm:max-w-xs">{url}</p>
-            ) : (
-              <p className="text-lg sm:text-xl font-serif italic text-[#1A1A1A]/40 truncate max-w-[250px] sm:max-w-xs">Awaiting input...</p>
+          <div className="text-left sm:text-right w-full sm:w-auto mt-4 sm:mt-0 flex flex-col items-start sm:items-end">
+            <div>
+              <p className="text-sm font-mono text-[#1A1A1A]">TARGET URL:</p>
+              {result ? (
+                <p className="text-lg sm:text-xl font-serif italic text-blue-600 truncate max-w-[250px] sm:max-w-xs">{url}</p>
+              ) : (
+                <p className="text-lg sm:text-xl font-serif italic text-[#1A1A1A]/40 truncate max-w-[250px] sm:max-w-xs">Awaiting input...</p>
+              )}
+            </div>
+            {window.aistudio && hasApiKey !== null && (
+              <button 
+                onClick={handleSetupKey}
+                className="mt-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#1A1A1A] hover:text-blue-600 transition-colors"
+                title="Bring your own API key"
+              >
+                <Key className="w-4 h-4" />
+                {hasApiKey ? 'Update API Key' : 'Set API Key'}
+              </button>
             )}
           </div>
         </header>
@@ -73,6 +124,24 @@ export default function App() {
               className="flex-1 flex flex-col justify-center max-w-2xl py-12"
             >
               <h2 className="text-3xl sm:text-4xl font-serif italic mb-6 text-[#1A1A1A]">Submit your portfolio for a ruthless, three-tiered editorial audit.</h2>
+              
+              {hasApiKey === false && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-8 p-4 bg-yellow-100/50 border border-yellow-500/30 flex flex-col items-start"
+                >
+                  <p className="text-sm font-sans mb-3 text-yellow-800 font-medium">To use The Critic, please provide your own Gemini API Key.</p>
+                  <button
+                    onClick={handleSetupKey}
+                    className="bg-yellow-500 text-white px-4 py-2 font-bold uppercase tracking-wider text-xs flex items-center gap-2 shadow-sm hover:bg-yellow-600 transition-colors"
+                  >
+                    <Key className="w-4 h-4" />
+                    Provide API Key
+                  </button>
+                </motion.div>
+              )}
+
               <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 mt-8">
                 <input
                   type="text"
@@ -84,7 +153,7 @@ export default function App() {
                 />
                 <button
                   type="submit"
-                  disabled={isLoading || !url.trim()}
+                  disabled={isLoading || !url.trim() || hasApiKey === false}
                   className="bg-[#1A1A1A] text-[#F5F2ED] hover:bg-blue-600 disabled:bg-[#1A1A1A]/20 disabled:text-[#1A1A1A]/50 px-8 py-3 font-bold uppercase tracking-widest text-xs transition-colors shrink-0"
                 >
                   Analyze
