@@ -1,0 +1,6 @@
+{
+  "name": "Design Portfolio Roaster",
+  "description": "An AI-powered application that critiques design portfolios from three distinct professional perspectives using Google Gemini.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
