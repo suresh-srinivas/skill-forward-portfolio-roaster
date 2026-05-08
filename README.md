@@ -1,20 +1,41 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# The Critic - Design Portfolio Roaster
 
-# Run and deploy your AI Studio app
+The Critic is an AI-powered application that evaluates design portfolios from three distinct, uncompromising professional perspectives. Built with React, Tailwind CSS, and the Google Gemini API, it provides unapologetic feedback to help designers level up their work.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/7831719c-77c0-4f81-83ee-66f5877afee8
+- **Automated Content Verification:** Scrapes the provided URL to ensure real content is being evaluated (powered by Jina Reader API).
+- **Three-Tiered Analysis:**
+  - **The Brutal Roast:** A "Gordon Ramsay" style critique focusing on first impressions and visual clichés.
+  - **Senior Lead Audit:** Actionable, no-nonsense feedback focusing on UX friction and technical setup.
+  - **The Wise Coach:** Philosophical, empathetic guidance aimed at long-term career positioning and storytelling.
+- **Editorial Aesthetic:** A strict, high-contrast visual design inspired by editorial print layouts, utilizing elegant typography (`Playfair Display`, `Inter`, `JetBrains Mono`).
+- **Bring Your Own API Key:** Seamless integration with Google AI Studio's API Key selection workflow.
 
-## Run Locally
+## Tech Stack
 
-**Prerequisites:**  Node.js
+- **Framework:** React 19 + Vite
+- **Styling:** Tailwind CSS V4
+- **Animations:** Motion (Framer Motion)
+- **AI Integration:** `@google/genai` (using `gemini-3.1-pro-preview` with structured JSON output and Google Search grounding)
+- **Typography:** Google Fonts (Playfair Display, Inter, JetBrains Mono)
+- **Icons:** Lucide React
 
+## Getting Started
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+1. Set your `GEMINI_API_KEY` in your `.env` file or use the built-in "Set API Key" interface in the app.
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Workflow
+
+1. Paste a portfolio URL into the target input.
+2. Click **Analyze**.
+3. *The Critic* extracts the content and triggers a heuristic evaluation using Gemini.
+4. Review the three distinct personas and use their feedback to improve the portfolio!
