@@ -1,6 +1,6 @@
 # The Critic - Design Portfolio Roaster
 
-The Critic is an AI-powered application that evaluates design portfolios from three distinct, uncompromising professional perspectives. Built with React, Tailwind CSS, and the Google Gemini API, it provides unapologetic feedback to help designers level up their work.
+The Critic is an AI-powered application that evaluates design portfolios from three distinct, uncompromising professional perspectives. Built with React, Tailwind CSS, and the Google Gemini API, it provides unapologetic feedback to help designers level up their work. The application features a guided, seamless "Bring Your Own API Key" workflow integrated with the UI.
 
 ## Features
 

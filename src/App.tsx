@@ -1,45 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Loader2, Key } from 'lucide-react';
 import { generateRoast, type RoastResponse } from './lib/gemini';
 import { PersonaCard } from './components/PersonaCard';
-
-declare global {
-  interface Window {
-    aistudio?: {
-      hasSelectedApiKey: () => Promise<boolean>;
-      openSelectKey: () => Promise<void>;
-    };
-  }
-}
 
 export default function App() {
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<RoastResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(true);
+  const [manualKeyInput, setManualKeyInput] = useState('');
+  const [savedManualKey, setSavedManualKey] = useState('');
 
-  useEffect(() => {
-    async function checkApiKey() {
-      if (window.aistudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setHasApiKey(hasKey);
-      } else {
-        setHasApiKey(true); // Default to true if not running in the platform, using environment var
-      }
-    }
-    checkApiKey();
-  }, []);
-
-  const handleSetupKey = async () => {
-    if (window.aistudio) {
-      try {
-        await window.aistudio.openSelectKey();
-        setHasApiKey(true); // Assume success to mitigate race condition
-      } catch (err) {
-        console.error(err);
-      }
+  const handleSetupKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualKeyInput.trim()) {
+      setSavedManualKey(manualKeyInput.trim());
+      setHasApiKey(true);
+      setError(null);
     }
   };
 
@@ -57,7 +36,7 @@ export default function App() {
     setResult(null);
 
     try {
-      const roast = await generateRoast(finalUrl);
+      const roast = await generateRoast(finalUrl, savedManualKey);
       setResult(roast);
     } catch (err: any) {
       console.error(err);
@@ -103,14 +82,14 @@ export default function App() {
                 <p className="text-lg sm:text-xl font-serif italic text-[#1A1A1A]/40 truncate max-w-[250px] sm:max-w-xs">Awaiting input...</p>
               )}
             </div>
-            {window.aistudio && hasApiKey !== null && (
+            {hasApiKey !== null && (
               <button 
-                onClick={handleSetupKey}
+                onClick={() => setHasApiKey(false)}
                 className="mt-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#1A1A1A] hover:text-blue-600 transition-colors"
                 title="Bring your own API key"
               >
                 <Key className="w-4 h-4" />
-                {hasApiKey ? 'Update API Key' : 'Set API Key'}
+                {savedManualKey ? 'Update API Key' : 'Set API Key'}
               </button>
             )}
           </div>
@@ -125,40 +104,58 @@ export default function App() {
             >
               <h2 className="text-3xl sm:text-4xl font-serif italic mb-6 text-[#1A1A1A]">Submit your portfolio for a ruthless, three-tiered editorial audit.</h2>
               
-              {hasApiKey === false && (
+              {hasApiKey === false ? (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-8 p-4 bg-yellow-100/50 border border-yellow-500/30 flex flex-col items-start"
+                  className="mt-8 p-6 bg-[#1A1A1A] text-[#F5F2ED] flex flex-col items-start border-l-4 border-red-600"
                 >
-                  <p className="text-sm font-sans mb-3 text-yellow-800 font-medium">To use The Critic, please provide your own Gemini API Key.</p>
-                  <button
-                    onClick={handleSetupKey}
-                    className="bg-yellow-500 text-white px-4 py-2 font-bold uppercase tracking-wider text-xs flex items-center gap-2 shadow-sm hover:bg-yellow-600 transition-colors"
-                  >
-                    <Key className="w-4 h-4" />
-                    Provide API Key
-                  </button>
+                  <p className="text-xl font-serif italic mb-2">API Key Required</p>
+                  <div className="text-sm font-sans mb-6 opacity-80 space-y-2">
+                    <p>Follow these 3 simple steps to continue:</p>
+                    <ol className="list-decimal pl-4 space-y-1">
+                      <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="underline hover:text-blue-400 font-bold">Google AI Studio</a></li>
+                      <li>Generate a new API key</li>
+                      <li>Paste the key below</li>
+                    </ol>
+                  </div>
+                  <form onSubmit={handleSetupKey} className="flex w-full flex-col sm:flex-row gap-2">
+                    <input 
+                      type="password"
+                      value={manualKeyInput}
+                      onChange={(e) => setManualKeyInput(e.target.value)}
+                      placeholder="Paste Gemini API Key here..."
+                      className="flex-1 bg-transparent border-b-2 border-[#F5F2ED] py-2 px-2 text-[#F5F2ED] placeholder:text-[#F5F2ED]/40 focus:outline-none focus:border-blue-400 focus:bg-transparent font-mono text-sm rounded-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!manualKeyInput.trim()}
+                      className="bg-[#F5F2ED] text-[#1A1A1A] px-6 py-3 font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2 hover:bg-blue-600 hover:text-[#F5F2ED] transition-colors disabled:opacity-50 mt-4 sm:mt-0"
+                    >
+                      <Key className="w-4 h-4" />
+                      Set Key
+                    </button>
+                  </form>
                 </motion.div>
+              ) : (
+                <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 mt-8">
+                  <input
+                    type="text"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="e.g. radha-portfolio-craft.vercel.app"
+                    disabled={isLoading}
+                    className="flex-1 bg-transparent border-b-2 border-[#1A1A1A] py-3 px-2 text-[#1A1A1A] placeholder:text-[#1A1A1A]/40 focus:outline-none focus:border-blue-600 transition-colors font-mono text-sm sm:text-base disabled:opacity-50 rounded-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isLoading || !url.trim()}
+                    className="bg-[#1A1A1A] text-[#F5F2ED] hover:bg-blue-600 disabled:bg-[#1A1A1A]/20 disabled:text-[#1A1A1A]/50 px-8 py-3 font-bold uppercase tracking-widest text-xs transition-colors shrink-0"
+                  >
+                    Analyze
+                  </button>
+                </form>
               )}
-
-              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 mt-8">
-                <input
-                  type="text"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="e.g. radha-portfolio-craft.vercel.app"
-                  disabled={isLoading}
-                  className="flex-1 bg-transparent border-b-2 border-[#1A1A1A] py-3 px-2 text-[#1A1A1A] placeholder:text-[#1A1A1A]/40 focus:outline-none focus:border-blue-600 transition-colors font-mono text-sm sm:text-base disabled:opacity-50 rounded-none"
-                />
-                <button
-                  type="submit"
-                  disabled={isLoading || !url.trim() || hasApiKey === false}
-                  className="bg-[#1A1A1A] text-[#F5F2ED] hover:bg-blue-600 disabled:bg-[#1A1A1A]/20 disabled:text-[#1A1A1A]/50 px-8 py-3 font-bold uppercase tracking-widest text-xs transition-colors shrink-0"
-                >
-                  Analyze
-                </button>
-              </form>
               {error && (
                 <p className="text-red-600 text-sm mt-4 font-mono font-bold uppercase tracking-wider">{error}</p>
               )}

@@ -6,8 +6,8 @@ export interface RoastResponse {
   wiseCoach: string;
 }
 
-export async function generateRoast(url: string): Promise<RoastResponse> {
-  const apiKey = (process.env as any).API_KEY || process.env.GEMINI_API_KEY;
+export async function generateRoast(url: string, providedApiKey?: string): Promise<RoastResponse> {
+  const apiKey = providedApiKey || (process.env as any).API_KEY || process.env.GEMINI_API_KEY;
   const ai = new GoogleGenAI({ apiKey });
 
   let siteContent = '';
